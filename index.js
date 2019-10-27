@@ -4,10 +4,9 @@ const cheerio = require('cheerio');
 const cors = require('cors');
 
 const app = express();
+const cache = {};
 
-app.use(cors());
-
-const fetchDataFromTophub = (url) => async () => {
+const fetchDataFromTophub = url => async () => {
 	const { data } = await axios.get(url);
 	const $ = cheerio.load(data);
 	const list = [];
@@ -64,9 +63,9 @@ const fetchEchojsData = async () => {
 const fetchYuqueData = async () => {
 	const baseUrl = 'https://www.yuque.com';
 	const { data } = await axios.get(
-		`${baseUrl}/api/explore/recommends?limit=20`,
+		`${baseUrl}/api/explore/recommends?limit=20`
 	);
-	const list = data.data.docs.map((item) => {
+	const list = data.data.docs.map(item => {
 		return {
 			id: item.id,
 			title: item.title,
@@ -150,8 +149,12 @@ const targetActionMap = {
 	xinquji: fetchXinqujiData, // 新趣集
 };
 
+app.use(cors());
+
 app.get('/', async (req, res) => {
+	const now = Date.now();
 	const target = req.query.target;
+
 	if (!target) {
 		return res.json({
 			code: 1,
@@ -165,8 +168,13 @@ app.get('/', async (req, res) => {
 		return res.json({ code: 1, msg: `target ${target} is not supported` });
 	}
 
+	if (cache[req.url] && now - cache[req.url].timestamp < 3600000) { // 1h
+		return res.json({ code: 0, list: cache[req.url].data });
+	}
+
 	try {
 		const list = await targetAction();
+		cache[req.url] = { timestamp: now, data: list };
 		res.json({ code: 0, list: list });
 	} catch (err) {
 		console.error(err);
@@ -183,7 +191,7 @@ app.use((err, req, res, next) => {
 	res.json({ code: 1, msg: err.message });
 });
 
-process.on('uncaughtException', (err) => {
+process.on('uncaughtException', err => {
 	console.error(err);
 	res.json({ code: 1, msg: err.message });
 });
