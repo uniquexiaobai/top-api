@@ -103,37 +103,19 @@ const fetchMaoyanData = async () => {
 
 const fetchXinqujiData = async () => {
 	const baseUrl = 'https://xinquji.com';
-	const { data } = await axios.get(`${baseUrl}`);
-	const $ = cheerio.load(data);
-	const list = [];
-
-	$('.ant-card')
-		.eq(0)
-		.find('.link')
-		.each(function() {
-			const id = $(this)
-				.attr('href')
-				.match(/posts\/(\d+)$/)[1];
-			const title = $(this)
-				.find('.content > h3')
-				.text();
-			const desc = $(this)
-				.find('.content > p')
-				.text();
-			const url = `${baseUrl}/posts/${id}`;
-
-			list.push({
-				id,
-				title,
-				desc,
-				url,
-			});
-		});
+	const fetchUrl = `${baseUrl}/frontend/post/groups?cursor=0`;
+	const { data } = await axios.get(fetchUrl);
+	const list = data.data.map(item => {
+		return {
+			id: item.id,
+			title: item.name,
+			desc: item.description,
+			url: `${baseUrl}/posts/${item.id}`,
+		};
+	});
 
 	return list;
 };
-
-fetchXinqujiData();
 
 const targetActionMap = {
 	weibo: fetchWeiboData, // 微博
@@ -168,7 +150,8 @@ app.get('/', async (req, res) => {
 		return res.json({ code: 1, msg: `target ${target} is not supported` });
 	}
 
-	if (cache[req.url] && now - cache[req.url].timestamp < 3600000) { // 1h
+	if (cache[req.url] && now - cache[req.url].timestamp < 3600000) {
+		// 1h
 		return res.json({ code: 0, list: cache[req.url].data });
 	}
 
