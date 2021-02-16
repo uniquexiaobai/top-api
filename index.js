@@ -117,6 +117,31 @@ const fetchXinqujiData = async (query = {}) => {
   return list;
 };
 
+const fetchAlligatorData = async () => {
+  const url = 'https://alligator.io/explore/';
+  const { data } = await axios.get(url);
+  const $ = cheerio.load(data);
+  const list = [];
+
+  $('.front-teaser').each(function () {
+    const title = $(this).find('h3').text();
+    const url = $(this).attr('href');
+    const fragment = url.split('/');
+    let id;
+    while (!id) {
+      id = fragment.pop();
+    }
+
+    list.push({
+      id,
+      title,
+      url,
+    });
+  });
+
+  return list;
+};
+
 const targetActionMap = {
   weibo: fetchWeiboData, // 微博
   weixin: fetchWeixinData, // 微信
@@ -129,6 +154,7 @@ const targetActionMap = {
   '36ky': fetch36kyData, // 36氪
   sspai: fetchSspaiData, // 少数派
   xinquji: fetchXinqujiData, // 新趣集
+  alligator: fetchAlligatorData, // alligator.io
 };
 
 app.use(cors());
