@@ -100,14 +100,14 @@ const fetchMaoyanData = async () => {
 };
 
 const fetchXinqujiData = async (query = {}) => {
-  const range = parseInt(query.range ?? 7);
+  const range = parseInt(query.range || 7);
   const baseUrl = 'https://xinquji.com';
   const urls = Array.from(
     { length: range },
     (_, i) => `${baseUrl}/frontend/post/groups?cursor=${i}`
   );
   const resList = await Promise.all(urls.map(url => axios.get(url)));
-  const dataList = resList.map(res => res?.data?.data);
+  const dataList = resList.map(res => res.data.data);
   const list = dataList.flat(2).map(item => ({
     id: item.id,
     title: item.name,
